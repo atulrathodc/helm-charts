@@ -3,7 +3,7 @@ apiVersion: http.keda.sh/v1alpha1
 kind: HTTPScaledObject
 metadata:
   name: {{ .Values.keda.http.name }}
-  namespace: dev
+  namespace: {{ .Values.namespace }}
   annotations:
   {{ toYaml .Values.keda.http.annotations | nindent 4 }}
 spec:

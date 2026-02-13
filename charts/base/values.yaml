@@ -4,6 +4,8 @@
 
 replicaCount: 3
 
+namespace: test-namespace
+
 image:
   repository: registry.designhunk.com/designhunk
   tag: API-01
