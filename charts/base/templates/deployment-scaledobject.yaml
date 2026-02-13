@@ -1,0 +1,32 @@
+{{- if .Values.keda.http.enabled }}
+apiVersion: http.keda.sh/v1alpha1
+kind: HTTPScaledObject
+metadata:
+  name: {{ .Values.keda.http.name }}
+  namespace: dev
+  annotations:
+  {{ toYaml .Values.keda.http.annotations | nindent 4 }}
+spec:
+  hosts:
+    {{- range .Values.keda.http.hosts }}
+    - {{ . }}
+    {{- end }}
+
+  scaledownPeriod: {{ .Values.keda.http.scaledownPeriod }}
+
+  pathPrefixes:
+    {{- range .Values.keda.http.pathPrefixes }}
+    - {{ . }}
+    {{- end }}
+
+  scaleTargetRef:
+    apiVersion: {{ .Values.keda.http.scaleTargetRef.apiVersion }}
+    kind: {{ .Values.keda.http.scaleTargetRef.kind }}
+    name: {{ .Values.keda.http.scaleTargetRef.name }}
+    service: {{ .Values.keda.http.scaleTargetRef.service }}
+    port: {{ .Values.keda.http.scaleTargetRef.port }}
+
+  replicas:
+    min: {{ .Values.keda.http.replicas.min }}
+    max: {{ .Values.keda.http.replicas.max }}
+  {{- end }}

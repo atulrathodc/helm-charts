@@ -1,0 +1,94 @@
+{{- range .Values.ingress.paths }}
+- path: {{ . }}
+pathType: Prefix
+backend:
+service:
+name: {{ $.Release.Name }}
+port:
+number: {{ $.Values.service.port }}
+{{- end }}
+
+
+
+helm install designhunk charts/event-service -f releases/dev/designhunk/values.yaml
+helm install commercebackend charts/event-service -f releases/dev/commercebackend/values.yaml
+
+
+helm install designhunk charts/myapp \
+-n dev \
+-f releases/dev/designhunk/values.yaml
+
+helm install commercebackend charts/myapp \
+-n dev \
+-f releases/dev/commercebackend/values.yaml
+
+
+helm install test-myapp myapp \
+--repo oci://registry.designhunk.com/helm-charts \
+--version 0.1.0
+
+
+argocd app create myapp-designhunk-dev \
+--repo oci://ghcr.io/my-org/helm-charts \
+--helm-chart myapp \
+--revision 0.1.0 \
+--helm-release-name designhunk \
+--values values/dev-designhunk.yaml \
+--dest-server https://kubernetes.default.svc \
+--dest-namespace dev
+
+
+helm dependency update
+helm install commercebackend myapp \
+-f values.yaml \
+-n dev
+
+helm push myapp-0.1.0.tgz oci://registry.designhunk.com/charts
+
+helm show chart oci://registry.designhunk.com/helm-charts/myapp --version 0.1.0
+
+helm install test myapp \
+--repo oci://registry.designhunk.com/helm-charts \
+--version 0.1.0
+
+helm dependency update
+helm lint .
+helm template .
+
+helm install base . -f values-dev.yaml
+
+
+helm template ./base --debug
+helm lint ./base --debug
+
+helm install base ./base --dry-run --debug
+helm install base ./base
+helm list --all-namespaces
+helm uninstall base
+
+helm registry login registry.designhunk.com
+
+
+helm registry login 10.102.126.108:5001 \
+--username admin \
+--insecure --plain-http
+
+
+echo "12345" | helm registry login 10.102.126.108:5001 \
+--username admin \
+--password-stdin \
+--plain-http
+
+helm package base
+helm push base-0.1.0.tgz oci://10.102.126.108:5001/helm --plain-http
+
+kubectl -n argocd exec deploy/argocd-repo-server -- \
+helm pull oci://10.102.126.108:5001/helm/base --version 0.1.0
+
+
+helm dependency update ./../base/designhunk
+
+helm show chart oci://10.179.136.108:5001/helm/deployment --version 0.1.0
+curl -k -u admin:12345 \
+-X DELETE \
+http://10.179.136.108:5001/v2/helm/designhunk/manifests/sha256:20483898d68c31a8ea64bf20b32dbb9f1f3fd385d3c14a7a64841ee8be05adb0

@@ -1,0 +1,161 @@
+# =================================================
+# Application basics (dependency alias: designhunk)
+# =================================================
+
+replicaCount: 3
+
+image:
+  repository: registry.designhunk.com/designhunk
+  tag: API-01
+  pullPolicy: Always   # ✅ FIXED (Alwayss ❌)
+
+# 🔑 REQUIRED (fixes containerPort = 0 issue)
+containerPort: 8080
+
+# =================================================
+# Service Account
+# =================================================
+serviceAccount:
+  create: true
+  name: designhunk-sa
+  automount: true
+  annotations: {}
+
+# =================================================
+# Pod metadata
+# =================================================
+podAnnotations: {}
+podLabels: {}
+
+terminationGracePeriodSeconds: 30
+
+# =================================================
+# Service
+# =================================================
+service:
+  name: designhunk
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 9006
+      targetPort: 8080
+      protocol: TCP
+
+# =================================================
+# Ingress (DNS + multiple paths)
+# =================================================
+ingress:
+  enabled: true
+  name: designhunk-api-ingress
+  className: nginx
+
+  annotations:
+#    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+#    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    #    nginx.ingress.kubernetes.io/preserve-host: "true"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+
+  hosts:
+    - host: designhunk.designhunk.com
+      paths:
+        - path: /api/events/designhunk/
+          pathType: Prefix
+        - path: /api/events/designhunk/actuator
+          pathType: Prefix
+
+  tls:
+    - hosts:
+        - designhunk.designhunk.com
+      secretName: designhunk-api-tls
+# =================================================
+# KEDA HTTP Autoscaling
+# =================================================
+keda:
+  http:
+    enabled: true
+    name: designhunk-http
+
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/compare-options: IgnoreExtraneous
+
+    hosts:
+      - designhunk.designhunk.com
+
+    pathPrefixes:
+      - /api/events/designhunk/
+
+    scaledownPeriod: 300
+
+    scaleTargetRef:
+      apiVersion: apps/v1
+      kind: Deployment
+      name: designhunk
+      service: designhunk
+      port: 9006
+
+    replicas:
+      min: 0
+      max: 10
+
+# =================================================
+# Probes (Spring Boot actuator)
+# =================================================
+probes:
+  startup:
+    path: /api/events/designhunk/actuator/health
+    failureThreshold: 180
+    periodSeconds: 2
+    timeoutSeconds: 3
+
+  readiness:
+    path: /api/events/designhunk/actuator/health/readiness
+    initialDelaySeconds: 30
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 5
+
+  liveness:
+    path: /api/events/designhunk/actuator/health/liveness
+    initialDelaySeconds: 300
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 5
+
+# =================================================
+# Resources
+# =================================================
+resources:
+  requests:
+    cpu: "200m"
+    memory: "512Mi"
+  limits:
+    cpu: "1000m"
+    memory: "1024Mi"
+
+# =================================================
+# Environment variables
+# =================================================
+env:
+  SPRING_PROFILES_ACTIVE: dev
+  SERVER_PORT: "8080"
+  SPRING_APPLICATION_JSON: '{"namespace":"maac","envCustom":"dev"}'
+  SPRING_CLOUD_BOOTSTRAP_ENABLED: "false"
+  SPRING_CLOUD_VAULT_ENABLED: "false"
+  SPRING_CONFIG_IMPORT: ""
+  JAVA_TOOL_OPTIONS: >
+    -XX:+UseContainerSupport
+    -XX:MaxRAMPercentage=70
+    -XX:InitialRAMPercentage=50
+    -XX:+ExitOnOutOfMemoryError
+
+# =================================================
+# Scheduling (optional)
+# =================================================
+nodeSelector: {}
+tolerations: []
+affinity: {}

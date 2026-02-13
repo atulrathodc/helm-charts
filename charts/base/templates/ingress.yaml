@@ -1,0 +1,43 @@
+{{- if .Values.ingress.enabled }}
+
+{{- $backendName := .Values.service.name }}
+{{- $backendPort := (index .Values.service.ports 0).port }}
+
+{{- if .Values.keda.http.enabled }}
+{{- $backendName = "keda-http-proxy" }}
+{{- $backendPort = 8080 }}
+{{- end }}
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.ingress.name }}
+  namespace: dev
+  annotations:
+{{ toYaml .Values.ingress.annotations | nindent 4 }}
+
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+
+{{- if .Values.ingress.tls }}
+  tls:
+{{ toYaml .Values.ingress.tls | nindent 4 }}
+{{- end }}
+
+  rules:
+{{- range .Values.ingress.hosts }}
+    - host: {{ .host }}
+      http:
+        paths:
+{{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $backendName }}
+                port:
+                  number: {{ $backendPort }}
+{{- end }}
+{{- end }}
+
+{{- end }}
