@@ -3,7 +3,17 @@ entries:
   base:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2026-02-13T08:51:41.911985+05:30"
+    created: "2026-02-13T09:04:07.092761+05:30"
+    description: Spring Boot API
+    digest: 79c6e6b7e5f945f3421f15f2f5aa28c4d9f56074ce41f3fbdbb9aca2417f112e
+    name: base
+    type: application
+    urls:
+    - https://atulrathodc.github.io/helm-charts/charts/base-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-02-13T09:04:07.092491+05:30"
     description: Spring Boot API
     digest: f23cb99b6634a2c6292c7a08f9cfcf368f2918f069919d1482ed44823fc88278
     name: base
@@ -11,4 +21,4 @@ entries:
     urls:
     - https://atulrathodc.github.io/helm-charts/charts/base-0.1.0.tgz
     version: 0.1.0
-generated: "2026-02-13T08:51:41.911633+05:30"
+generated: "2026-02-13T09:04:07.092147+05:30"
